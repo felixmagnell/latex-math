@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Latex-matte v2</title>
+
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="%23000000"/>
+  <text x="32" y="45" text-anchor="middle" font-size="46" font-family="Georgia, serif" font-style="italic" font-weight="700" fill="white">π</text>
+</svg>'> 
+    <script>
+    const DEFAULT_FONT = localStorage.getItem("mjx-font") || "mathjax-tex";
+
+    MathJax = {
+      svg: {
+        font: DEFAULT_FONT
+      },
+      startup: {
+        typeset: false
+      }
+    };
+  </script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+      background: #f7f7f7;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .top-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    select,
+    input,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    select,
+    input,
+    button {
+      padding: 5px 8px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    #formulaList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .formula-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: stretch;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+   textarea {
+  width: 100%;
+  height: 90px;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 8px;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+    .preview {
+      min-height: 72px;
+      max-height: 120px;
+      overflow: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 96px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #666;
+      min-height: 1em;
+    }
+
+    .error {
+      color: #b00020;
+    }
+
+    @media (max-width: 850px) {
+      .formula-row {
+        grid-template-columns: 1fr;
+      }
+
+      .row-actions {
+        flex-direction: row;
+      }
+    }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.brand-logo {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+}
+
+.brand h2 {
+  margin: 0;
+}
+  </style>
+</head>
+
+<body>
+
+<div class="brand">
+  <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+    <rect width="64" height="64" rx="12" fill="#000000"/>
+    <text x="32" y="45" text-anchor="middle"
+          font-size="46"
+          font-family="Georgia, serif"
+          font-style="italic"
+          font-weight="700"
+          fill="white">π</text>
+  </svg>
+  <h2>Latex-matte v2</h2>
+</div>
+
+<div class="top-controls">
+  <label>
+    Font:
+    <select id="fontSelect">
+      <option value="mathjax-newcm">newcm</option>
+      <option value="mathjax-asana">asana</option>
+      <option value="mathjax-bonum">bonum</option>
+      <option value="mathjax-dejavu">dejavu</option>
+      <option value="mathjax-fira">fira</option>
+      <option value="mathjax-modern">modern</option>
+      <option value="mathjax-pagella">pagella</option>
+      <option value="mathjax-schola">schola</option>
+      <option value="mathjax-stix2">stix2</option>
+      <option value="mathjax-termes">termes</option>
+      <option value="mathjax-tex">tex</option>
+    </select>
+  </label>
+
+  <label>
+    Font size:
+    <input id="fontSizeInput" type="number" min="50" max="500" step="10" value="160">
+    %
+  </label>
+
+  <button id="addBtn" type="button">Add formula</button>
+</div>
+
+<div id="formulaList"></div>
+
+<script>
+  const formulaList = document.getElementById("formulaList");
+  const fontSelect = document.getElementById("fontSelect");
+  const fontSizeInput = document.getElementById("fontSizeInput");
+  const addBtn = document.getElementById("addBtn");
+
+  fontSelect.value = DEFAULT_FONT;
+  fontSizeInput.value = localStorage.getItem("mjx-font-size") || "160";
+
+  const starterFormulas = [
+    String.raw`\frac{x}{y}`,
+    String.raw`x^3 = \frac{1}{3}`,
+    String.raw`\int_0^1 x^2\,dx = \frac{1}{3}`
+  ];
+
+  fontSelect.addEventListener("change", () => {
+    localStorage.setItem("mjx-font", fontSelect.value);
+    saveFormulas();
+    localStorage.setItem("mjx-font-size", fontSizeInput.value);
+    location.reload();
+  });
+
+  fontSizeInput.addEventListener("input", () => {
+    localStorage.setItem("mjx-font-size", fontSizeInput.value);
+    renderAll();
+  });
+
+  addBtn.addEventListener("click", () => {
+    addFormulaRow("");
+    saveFormulas();
+  });
+
+  function getFontSizeScale() {
+    const value = Number(fontSizeInput.value);
+    if (!Number.isFinite(value) || value <= 0) return 1.6;
+    return value / 100;
+  }
+
+  function formulaToFilename(formula) {
+    let name = formula.trim();
+
+    name = name
+      .replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, "$1-over-$2")
+      .replace(/\\sqrt\s*\{([^{}]+)\}/g, "sqrt-$1")
+      .replace(/\\left/g, "")
+      .replace(/\\right/g, "")
+      .replace(/\\sin/g, "sin")
+      .replace(/\\cos/g, "cos")
+      .replace(/\\tan/g, "tan")
+      .replace(/\\log/g, "log")
+      .replace(/\\ln/g, "ln")
+      .replace(/\\pi/g, "pi")
+      .replace(/\\int/g, "integral")
+      .replace(/\\sum/g, "sum")
+      .replace(/\\infty/g, "infty")
+      .replace(/\\cdot/g, "dot")
+      .replace(/\\,/g, "")
+      .replace(/[{}]/g, "")
+      .replace(/\^/g, "-pow-")
+      .replace(/_/g, "-")
+      .replace(/=/g, "-eq-")
+      .replace(/\+/g, "-plus-")
+      .replace(/\*/g, "-times-")
+      .replace(/\//g, "-")
+      .replace(/[()]/g, "")
+      .replace(/\\/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    return (name || "formula").slice(0, 80) + ".svg";
+  }
+
+  async function renderRow(row) {
+    const textarea = row.querySelector("textarea");
+    const preview = row.querySelector(".preview");
+    const status = row.querySelector(".status");
+    const formula = textarea.value.trim();
+
+    preview.innerHTML = "";
+    status.textContent = "";
+    status.className = "status";
+
+    if (!formula) return;
+
+    try {
+      const node = await MathJax.tex2svgPromise(formula, { display: true });
+
+      const svg = node.querySelector("svg");
+
+      if (svg) {
+          svg.dataset.scale = String(getFontSizeScale()); 
+      }
+      node.style.fontSize = `${getFontSizeScale() * 100}%`;
+
+      preview.appendChild(node);
+      status.textContent = formulaToFilename(formula);
+    } catch (err) {
+      status.textContent = "Error: " + (err.message || String(err));
+      status.className = "status error";
+    }
+  }
+
+  function renderAll() {
+    document.querySelectorAll(".formula-row").forEach(renderRow);
+  }
+
+  function downloadRow(row) {
+  const svg = row.querySelector("svg");
+  const formula = row.querySelector("textarea").value.trim();
+
+  if (!svg) return;
+
+  const clone = svg.cloneNode(true);
+
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+  const scale = getFontSizeScale();
+
+  const width = clone.getAttribute("width");
+  const height = clone.getAttribute("height");
+
+  if (width && width.endsWith("ex")) {
+    clone.setAttribute("width", parseFloat(width) * scale + "ex");
+  }
+
+  if (height && height.endsWith("ex")) {
+    clone.setAttribute("height", parseFloat(height) * scale + "ex");
+  }
+
+  const data =
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    new XMLSerializer().serializeToString(clone);
+
+  const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = formulaToFilename(formula);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+  function saveFormulas() {
+    const formulas = Array.from(document.querySelectorAll(".formula-row textarea"))
+      .map(t => t.value);
+
+    localStorage.setItem("mjx-formulas", JSON.stringify(formulas));
+  }
+
+  function addFormulaRow(initialValue) {
+    const row = document.createElement("div");
+    row.className = "formula-row";
+
+    row.innerHTML = `
+      <div>
+        <textarea spellcheck="false"></textarea>
+      </div>
+      <div>
+        <div class="preview"></div>
+        <div class="status"></div>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="render-btn">Render</button>
+        <button type="button" class="download-btn">Download</button>
+        <button type="button" class="delete-btn">Delete</button>
+      </div>
+    `;
+
+    const textarea = row.querySelector("textarea");
+    textarea.value = initialValue;
+
+    let renderTimer;
+
+    textarea.addEventListener("input", () => {
+      saveFormulas();
+
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => {
+        renderRow(row);
+      }, 300);
+    });
+
+    textarea.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        renderRow(row);
+      }
+    });
+
+    row.querySelector(".render-btn").addEventListener("click", () => {
+      renderRow(row);
+    });
+
+    row.querySelector(".download-btn").addEventListener("click", () => {
+      downloadRow(row);
+    });
+
+    row.querySelector(".delete-btn").addEventListener("click", () => {
+  const formula = textarea.value.trim() || "this empty formula";
+
+  const confirmed = confirm(`Delete ${formula}?`);
+
+  if (!confirmed) return;
+
+  row.remove();
+  saveFormulas();
+});
+
+    formulaList.appendChild(row);
+
+    if (initialValue.trim()) {
+      renderRow(row);
+    }
+  }
+
+  window.addEventListener("load", async () => {
+    await MathJax.startup.promise;
+
+    const saved = localStorage.getItem("mjx-formulas");
+
+    if (saved) {
+      try {
+        JSON.parse(saved).forEach(addFormulaRow);
+      } catch {
+        starterFormulas.forEach(addFormulaRow);
+      }
+    } else {
+      starterFormulas.forEach(addFormulaRow);
+    }
+  });
+</script>
+
+</body>
+</html>
