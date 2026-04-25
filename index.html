@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Latex-matte v2</title>
+  <title>Latex-math v2</title>
 
 <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -165,7 +165,7 @@
           font-weight="700"
           fill="white">π</text>
   </svg>
-  <h2>Latex-matte v2</h2>
+  <h2>Latex-math v2</h2>
 </div>
 
 <div class="top-controls">
@@ -193,7 +193,9 @@
   </label>
 
   <button id="addBtn" type="button">Add formula</button>
-</div>
+ <button id="exportBtn" type="button">Export formulas</button>
+<button id="importBtn" type="button">Import formulas</button>
+<input id="importFileInput" type="file" accept="application/json" hidden></div>
 
 <div id="formulaList"></div>
 
@@ -202,7 +204,11 @@
   const fontSelect = document.getElementById("fontSelect");
   const fontSizeInput = document.getElementById("fontSizeInput");
   const addBtn = document.getElementById("addBtn");
+  const exportBtn = document.getElementById("exportBtn");
 
+const importBtn = document.getElementById("importBtn");
+
+const importFileInput = document.getElementById("importFileInput");
   fontSelect.value = DEFAULT_FONT;
   fontSizeInput.value = localStorage.getItem("mjx-font-size") || "160";
 
@@ -417,6 +423,8 @@
     }
   }
 
+
+
   window.addEventListener("load", async () => {
     await MathJax.startup.promise;
 
@@ -432,7 +440,60 @@
       starterFormulas.forEach(addFormulaRow);
     }
   });
-</script>
+
+function exportFormulas() {
+  saveFormulas();
+
+  const formulas = JSON.parse(localStorage.getItem("mjx-formulas") || "[]");
+
+  const blob = new Blob([JSON.stringify(formulas, null, 2)], {
+    type: "application/json"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "formulas.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importFormulas(file) {
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    try {
+      const formulas = JSON.parse(reader.result);
+
+      if (!Array.isArray(formulas)) {
+        throw new Error("File must contain a JSON array.");
+      }
+
+      localStorage.setItem("mjx-formulas", JSON.stringify(formulas));
+      location.reload();
+    } catch (err) {
+      alert("Could not import formulas: " + err.message);
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+exportBtn.addEventListener("click", exportFormulas);
+
+importBtn.addEventListener("click", () => {
+  importFileInput.click();
+});
+
+importFileInput.addEventListener("change", () => {
+  const file = importFileInput.files[0];
+  if (file) importFormulas(file);
+  importFileInput.value = "";
+});</script>
 
 </body>
 </html>
